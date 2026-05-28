@@ -1,0 +1,2092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>FarmLedger</title>
+
+<!-- ============ PWA META ============ -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#1A4D2E" />
+<meta name="description" content="Offline-first farm finance, livestock and operations platform." />
+
+<!-- iOS PWA -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="FarmLedger" />
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+
+<!-- Android / Chrome -->
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="application-name" content="FarmLedger" />
+<style>
+  :root {
+    --green: #1A4D2E;
+    --green-2: #2E5B3A;
+    --green-soft: #E8F1EB;
+    --green-tint: #F4F8F5;
+    --amber: #E0AB2B;
+    --amber-soft: #FFF4D6;
+    --red: #C0392B;
+    --red-soft: #FDECEA;
+    --blue: #2A6DB0;
+    --blue-soft: #E5F0F9;
+    --grey-900: #1F2A24;
+    --grey-700: #4A554E;
+    --grey-500: #7A8580;
+    --grey-300: #C9D2CC;
+    --grey-200: #DDE3E0;
+    --grey-100: #EEF1EF;
+    --grey-50: #F7F9F8;
+    --white: #FFFFFF;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 12px 32px rgba(0,0,0,0.10);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--grey-50);
+    color: var(--grey-900);
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  /* iOS safe area handling */
+  .topbar, .proto-banner, #iosHint {
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+  .proto-banner, #iosHint { padding-top: max(7px, calc(env(safe-area-inset-top) * 0.5 + 7px)); }
+  /* When installed, hide the proto banner */
+  body.installed .proto-banner { display: none; }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; }
+  input, select, textarea { font-family: inherit; }
+  h1, h2, h3, h4 { margin: 0; }
+
+  /* ============ TOP BAR ============ */
+  .topbar {
+    background: var(--green);
+    color: var(--white);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0; z-index: 100;
+    box-shadow: var(--shadow-md);
+    flex-wrap: wrap;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: 17px; letter-spacing: 0.2px;
+  }
+  .logo-mark {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: var(--white); color: var(--green);
+    display: grid; place-items: center; font-weight: 800; font-size: 15px;
+  }
+  .topbar-spacer { flex: 1; }
+  .top-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .icon-btn {
+    background: rgba(255,255,255,0.10);
+    border: 0; color: var(--white);
+    width: 34px; height: 34px; border-radius: 8px;
+    display: grid; place-items: center;
+    font-size: 15px;
+    position: relative;
+    transition: background .15s;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,0.18); }
+  .badge {
+    position: absolute; top: -2px; right: -2px;
+    background: var(--amber); color: var(--green);
+    font-size: 10px; font-weight: 700;
+    min-width: 16px; height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    display: grid; place-items: center;
+  }
+  .role-select {
+    background: rgba(255,255,255,0.12);
+    border: 0; color: var(--white);
+    padding: 7px 26px 7px 10px; font-size: 13px; font-weight: 600;
+    border-radius: 8px;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path fill='white' d='M6 8L2 4h8z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+  }
+  .role-select option { color: var(--grey-900); }
+  .ccy-toggle {
+    background: rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 3px;
+    display: flex;
+  }
+  .ccy-toggle button {
+    background: transparent; border: 0;
+    color: rgba(255,255,255,0.7);
+    padding: 4px 10px;
+    font-size: 12px; font-weight: 600;
+    border-radius: 6px;
+    transition: all .15s;
+  }
+  .ccy-toggle button.active { background: var(--white); color: var(--green); }
+  .period {
+    background: rgba(255,255,255,0.12);
+    border: 0; color: var(--white);
+    padding: 7px 12px; font-size: 13px; font-weight: 500;
+    border-radius: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--amber); color: var(--green);
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px;
+    border: 2px solid rgba(255,255,255,0.4);
+  }
+
+  /* ============ NAV ============ */
+  .nav {
+    background: var(--white);
+    border-bottom: 1px solid var(--grey-100);
+    padding: 0 20px;
+    display: flex; gap: 4px;
+    overflow-x: auto;
+    position: sticky; top: 0; z-index: 90;
+  }
+  .nav-item {
+    background: transparent; border: 0;
+    padding: 14px 14px 12px;
+    border-bottom: 3px solid transparent;
+    font-size: 14px; font-weight: 600;
+    color: var(--grey-700);
+    white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
+    transition: all .15s;
+  }
+  .nav-item:hover { color: var(--green); }
+  .nav-item.active {
+    color: var(--green);
+    border-bottom-color: var(--green);
+  }
+  .nav-item .pill {
+    background: var(--amber); color: var(--green);
+    font-size: 10px; font-weight: 700;
+    padding: 1px 6px; border-radius: 999px;
+  }
+
+  /* ============ MAIN ============ */
+  .main {
+    padding: 20px 20px 80px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .screen { display: none; }
+  .screen.active { display: block; animation: fade .15s; }
+  @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+
+  /* ============ PROTO BANNER ============ */
+  .proto-banner {
+    background: var(--amber-soft);
+    border-bottom: 1px dashed var(--amber);
+    color: #6B4F00;
+    padding: 7px 16px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .proto-banner b { font-weight: 700; }
+  .proto-banner button {
+    background: var(--amber); color: var(--green);
+    border: 0; padding: 3px 10px; border-radius: 6px;
+    font-size: 11px; font-weight: 700;
+    margin-left: 8px;
+  }
+
+  /* ============ COMMON CARD ============ */
+  .card {
+    background: var(--white);
+    border-radius: var(--radius);
+    border: 1px solid var(--grey-100);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--grey-100);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title { font-weight: 700; font-size: 14px; }
+  .card-body { padding: 16px; }
+
+  /* ============ KPI ============ */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 720px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  }
+  .kpi-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--grey-100);
+  }
+  .kpi-label {
+    font-size: 11px; font-weight: 600; color: var(--grey-500);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .kpi-icon {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: var(--green-soft); color: var(--green);
+    display: grid; place-items: center; font-size: 12px;
+  }
+  .kpi-value {
+    font-size: 24px; font-weight: 700; margin: 6px 0 4px;
+    letter-spacing: -0.5px;
+  }
+  .kpi-sub { font-size: 12px; color: var(--grey-700); }
+  .delta-up { color: var(--green-2); font-weight: 600; }
+  .delta-down { color: var(--red); font-weight: 600; }
+
+  /* ============ LAYOUT 2-col ============ */
+  .layout-2col {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 18px;
+  }
+  @media (max-width: 1000px) { .layout-2col { grid-template-columns: 1fr; } }
+
+  /* ============ PROJECTS GRID ============ */
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+  }
+  .project-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 14px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--grey-100);
+    border-left: 4px solid var(--grey-300);
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .project-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .project-card.status-green { border-left-color: var(--green-2); }
+  .project-card.status-amber { border-left-color: var(--amber); }
+  .project-card.status-red { border-left-color: var(--red); }
+  .project-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .project-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: grid; place-items: center; font-size: 18px; flex-shrink: 0;
+  }
+  .icon-crop { background: #E8F1EB; }
+  .icon-livestock { background: #FFF4D6; }
+  .icon-breeding { background: #FDECEA; }
+  .icon-poultry { background: #FEF3DA; }
+  .project-name { font-weight: 700; font-size: 14px; line-height: 1.2; }
+  .project-meta { font-size: 11px; color: var(--grey-500); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .status-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--grey-300); margin-left: auto;
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
+  }
+  .status-dot.green { background: var(--green-2); }
+  .status-dot.amber { background: var(--amber); }
+  .status-dot.red { background: var(--red); }
+  .project-stats {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    margin-top: 8px; padding-top: 10px;
+    border-top: 1px solid var(--grey-100);
+  }
+  .stat-label { font-size: 10px; color: var(--grey-500); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { font-size: 13px; font-weight: 700; margin-top: 2px; }
+  .stat-value.positive { color: var(--green-2); }
+  .stat-value.negative { color: var(--red); }
+  .budget-bar { height: 5px; background: var(--grey-100); border-radius: 999px; overflow: hidden; margin-top: 10px; }
+  .budget-fill { height: 100%; border-radius: 999px; background: var(--green-2); transition: width .4s; }
+  .budget-fill.amber { background: var(--amber); }
+  .budget-fill.red { background: var(--red); }
+  .budget-row { display: flex; justify-content: space-between; font-size: 10px; color: var(--grey-700); margin-top: 4px; }
+
+  /* ============ QUICK ACTIONS ============ */
+  .quick-actions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 720px) { .quick-actions { grid-template-columns: repeat(2, 1fr); } }
+  .qa-btn {
+    background: var(--white);
+    border: 1px solid var(--grey-100);
+    border-radius: var(--radius);
+    padding: 12px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; font-weight: 600;
+    color: var(--grey-900);
+    box-shadow: var(--shadow-sm);
+    transition: all .15s;
+  }
+  .qa-btn:hover { border-color: var(--green); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  .qa-icon {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: var(--green-soft); color: var(--green);
+    display: grid; place-items: center; font-size: 15px; flex-shrink: 0;
+  }
+  .qa-btn.primary { background: var(--green); color: var(--white); border-color: var(--green); }
+  .qa-btn.primary .qa-icon { background: rgba(255,255,255,0.18); color: var(--white); }
+
+  /* ============ LIST ITEMS ============ */
+  .list-item {
+    padding: 10px 14px;
+    display: flex; align-items: flex-start; gap: 10px;
+    border-bottom: 1px solid var(--grey-100);
+    transition: background .15s;
+  }
+  .list-item:last-child { border-bottom: 0; }
+  .list-item:hover { background: var(--grey-50); }
+  .li-icon { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; font-size: 13px; flex-shrink: 0; }
+  .li-icon.amber { background: var(--amber-soft); color: var(--amber); }
+  .li-icon.red { background: var(--red-soft); color: var(--red); }
+  .li-icon.green { background: var(--green-soft); color: var(--green-2); }
+  .li-icon.blue { background: var(--blue-soft); color: var(--blue); }
+  .li-content { flex: 1; }
+  .li-title { font-size: 13px; font-weight: 600; line-height: 1.3; }
+  .li-meta { font-size: 11px; color: var(--grey-500); margin-top: 2px; }
+  .li-action { font-size: 11px; color: var(--green); font-weight: 600; margin-top: 4px; cursor: pointer; }
+
+  /* ============ BACK BUTTON ============ */
+  .back-btn {
+    background: transparent; border: 0;
+    color: var(--grey-700); font-size: 13px; font-weight: 600;
+    padding: 4px 8px; border-radius: 6px;
+    margin-bottom: 10px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .back-btn:hover { background: var(--grey-100); color: var(--green); }
+
+  /* ============ TABS ============ */
+  .tabs {
+    border-bottom: 1px solid var(--grey-100);
+    display: flex; gap: 4px;
+    margin: 16px 0;
+    overflow-x: auto;
+  }
+  .tab {
+    background: transparent; border: 0;
+    padding: 10px 14px; border-bottom: 2px solid transparent;
+    font-size: 13px; font-weight: 600;
+    color: var(--grey-700);
+    white-space: nowrap;
+  }
+  .tab.active { color: var(--green); border-bottom-color: var(--green); }
+
+  /* ============ TABLE ============ */
+  .table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px;
+  }
+  .table th, .table td {
+    text-align: left; padding: 9px 12px;
+    border-bottom: 1px solid var(--grey-100);
+  }
+  .table th {
+    font-size: 11px; font-weight: 700;
+    color: var(--grey-500); text-transform: uppercase; letter-spacing: 0.5px;
+    background: var(--grey-50);
+  }
+  .table tr:last-child td { border-bottom: 0; }
+  .table tr:hover td { background: var(--grey-50); }
+  .table .right { text-align: right; }
+  .pill {
+    display: inline-block; padding: 2px 8px;
+    border-radius: 999px; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  .pill-green { background: var(--green-soft); color: var(--green); }
+  .pill-amber { background: var(--amber-soft); color: #946800; }
+  .pill-red { background: var(--red-soft); color: var(--red); }
+  .pill-grey { background: var(--grey-100); color: var(--grey-700); }
+
+  /* ============ MODAL ============ */
+  .modal-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-backdrop.show { display: flex; animation: fade .15s; }
+  .modal {
+    background: var(--white);
+    border-radius: var(--radius);
+    width: 100%; max-width: 520px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    max-height: 92vh; display: flex; flex-direction: column;
+  }
+  .modal-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--grey-100);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-header h3 { font-size: 15px; }
+  .close-btn {
+    background: transparent; border: 0;
+    width: 30px; height: 30px; border-radius: 8px;
+    font-size: 17px; color: var(--grey-500);
+  }
+  .close-btn:hover { background: var(--grey-100); color: var(--grey-900); }
+  .modal-body { padding: 18px; overflow-y: auto; flex: 1; }
+  .modal-footer {
+    padding: 12px 18px;
+    border-top: 1px solid var(--grey-100);
+    display: flex; justify-content: flex-end; gap: 8px;
+    background: var(--grey-50);
+  }
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block; font-size: 11px; font-weight: 700;
+    color: var(--grey-700); margin-bottom: 5px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 9px 11px;
+    border: 1px solid var(--grey-300);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    background: var(--white);
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: none; border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(26,77,46,0.10);
+  }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* ============ BUTTONS ============ */
+  .btn {
+    padding: 9px 16px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    border: 1px solid transparent;
+    transition: all .15s;
+  }
+  .btn-ghost { background: transparent; color: var(--grey-700); }
+  .btn-ghost:hover { background: var(--grey-100); }
+  .btn-primary { background: var(--green); color: var(--white); }
+  .btn-primary:hover { background: var(--green-2); }
+  .btn-danger { background: var(--red); color: var(--white); }
+  .btn-amber { background: var(--amber); color: var(--green); }
+  .btn-outline { background: var(--white); border-color: var(--grey-300); color: var(--grey-900); }
+  .btn-outline:hover { border-color: var(--green); color: var(--green); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* ============ TOAST ============ */
+  .toast {
+    position: fixed; bottom: 20px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--green); color: var(--white);
+    padding: 12px 20px; border-radius: 10px;
+    font-size: 14px; font-weight: 600;
+    box-shadow: var(--shadow-lg);
+    transition: transform .25s; z-index: 300;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ============ EMPTY STATE ============ */
+  .empty {
+    text-align: center; padding: 30px 16px;
+    color: var(--grey-500); font-size: 13px;
+  }
+
+  /* ============ RBAC HINT ============ */
+  .rbac-hint {
+    background: var(--blue-soft);
+    border: 1px solid var(--blue);
+    color: var(--blue);
+    padding: 8px 12px; border-radius: 8px;
+    font-size: 12px;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* Disabled actions for restricted roles */
+  .disabled-by-role {
+    opacity: 0.4; pointer-events: none;
+    filter: grayscale(0.8);
+  }
+
+  /* Print report - re-style entirely */
+  .report-shell { background: var(--white); padding: 30px; border-radius: var(--radius); box-shadow: var(--shadow-sm); border: 1px solid var(--grey-100); max-width: 820px; margin: 0 auto; }
+  .report-shell h1 { font-size: 22px; color: var(--green); }
+  .report-shell h2 { font-size: 14px; color: var(--green-2); text-transform: uppercase; letter-spacing: 0.6px; margin: 24px 0 10px; padding-bottom: 4px; border-bottom: 2px solid var(--green); }
+  .rep-cover { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 12px; border-bottom: 3px solid var(--green); margin-bottom: 16px; }
+  .rep-cover .right { text-align: right; font-size: 12px; color: var(--grey-700); }
+  .rep-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  .rep-summary .cell { background: var(--green-tint); padding: 10px; border-radius: 8px; border-left: 3px solid var(--green); }
+  .rep-summary .lbl { font-size: 10px; color: var(--grey-700); text-transform: uppercase; letter-spacing: 0.5px; }
+  .rep-summary .val { font-size: 18px; font-weight: 700; margin-top: 2px; }
+  .rep-commentary { background: var(--amber-soft); border-left: 4px solid var(--amber); padding: 10px 14px; border-radius: 6px; font-size: 13px; line-height: 1.5; }
+  @media print {
+    body { background: var(--white); }
+    .topbar, .nav, .proto-banner, .qa-btn, .toast, .modal-backdrop, .no-print { display: none !important; }
+    .main { padding: 0; }
+    .report-shell { box-shadow: none; border: 0; padding: 0; }
+  }
+
+  /* ============ ANIMAL/BREED CARD ============ */
+  .animal-card {
+    background: var(--white); border: 1px solid var(--grey-100);
+    border-radius: var(--radius); padding: 14px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow-sm);
+  }
+  .animal-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .animal-icon { width: 38px; height: 38px; border-radius: 50%; background: var(--green-soft); display: grid; place-items: center; font-size: 20px; }
+  .countdown {
+    background: var(--green-tint); padding: 10px 12px; border-radius: 8px;
+    display: flex; align-items: center; gap: 12px;
+    border-left: 4px solid var(--green);
+    margin-top: 8px;
+  }
+  .countdown.urgent { background: var(--amber-soft); border-left-color: var(--amber); }
+  .countdown.due { background: var(--red-soft); border-left-color: var(--red); }
+  .cd-days { font-size: 22px; font-weight: 700; color: var(--green); }
+  .cd-days.urgent { color: #946800; }
+  .cd-days.due { color: var(--red); }
+
+  /* Section header */
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin: 22px 0 12px; }
+  .section-title { font-size: 16px; font-weight: 700; }
+
+  /* Inline link */
+  .link { color: var(--green); cursor: pointer; font-weight: 600; }
+  .link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<!-- ============ PROTO BANNER ============ -->
+<div class="proto-banner" id="protoBanner">
+  <b>Prototype preview</b> — data saved on this device only.
+  <button onclick="resetDemo()">Demo data</button>
+  <button onclick="startFresh()" style="background:#1A4D2E; color:white; margin-left:6px;">🌱 Start fresh</button>
+  <button id="installBtn" style="display:none; background:#1A4D2E; color:white; margin-left:6px;">📲 Install app</button>
+</div>
+
+<!-- ============ INSTALL HINT BANNER (iOS) ============ -->
+<div id="iosHint" style="display:none; background:#1A4D2E; color:white; padding:10px 16px; font-size:12px; text-align:center;">
+  📲 To install: tap the <b>Share</b> button below, then <b>Add to Home Screen</b>.
+  <button onclick="document.getElementById('iosHint').style.display='none'" style="background:rgba(255,255,255,0.2); color:white; border:0; padding:3px 10px; border-radius:6px; margin-left:8px; font-size:11px;">Dismiss</button>
+</div>
+
+<!-- ============ TOP BAR ============ -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-mark">F</div>
+    FarmLedger
+  </div>
+  <button class="period">📅 May 2026 ▾</button>
+  <div class="ccy-toggle">
+    <button class="active" data-ccy="USD">USD</button>
+    <button data-ccy="ZIG">ZiG</button>
+  </div>
+  <div class="topbar-spacer"></div>
+  <div class="top-controls">
+    <select class="role-select" id="roleSelect">
+      <option value="owner">Patrick (Owner)</option>
+      <option value="spouse">Spouse</option>
+      <option value="manager">Manager</option>
+      <option value="labourer">Tendai (Labourer)</option>
+    </select>
+    <button class="icon-btn" title="Notifications">
+      🔔 <span class="badge" id="notifBadge">3</span>
+    </button>
+    <button class="icon-btn" title="Sync" onclick="toast('✓ Synced — last: just now')">🔄</button>
+    <div class="avatar" id="avatar">P</div>
+  </div>
+</div>
+
+<!-- ============ NAV ============ -->
+<div class="nav" id="nav">
+  <button class="nav-item active" data-screen="dashboard">📊 Dashboard</button>
+  <button class="nav-item" data-screen="projects">🌱 Projects</button>
+  <button class="nav-item" data-screen="livestock">🐐 Livestock & Breeding</button>
+  <button class="nav-item" data-screen="report">📄 Monthly Report</button>
+  <button class="nav-item" data-screen="approvals">✓ Approvals <span class="pill" id="approvalsPill">1</span></button>
+</div>
+
+<!-- ============ MAIN ============ -->
+<div class="main">
+
+  <!-- DASHBOARD SCREEN -->
+  <div class="screen active" id="screen-dashboard">
+    <div style="font-size: 14px; color: var(--grey-500);" id="greetLine">Good morning, Patrick.</div>
+    <h1 style="font-size: 22px; margin: 2px 0 4px; letter-spacing: -0.5px;">Farm Overview</h1>
+    <div style="font-size: 12px; color: var(--grey-700); margin-bottom: 16px;">
+      Showing <strong>May 2026</strong> · Base currency <strong id="ccyLabel">USD</strong> · Last sync just now
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label"><span class="kpi-icon">💰</span> Total Income</div>
+        <div class="kpi-value" id="kpiIncome">$8,420</div>
+        <div class="kpi-sub"><span class="delta-up">▲ 12.4%</span> vs Apr</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label"><span class="kpi-icon" style="background: var(--red-soft); color: var(--red);">💸</span> Total Expenses</div>
+        <div class="kpi-value" id="kpiExpenses">$5,910</div>
+        <div class="kpi-sub"><span class="delta-down">▲ 8.1%</span> vs Apr</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label"><span class="kpi-icon">📈</span> Net P&amp;L</div>
+        <div class="kpi-value" id="kpiNet" style="color: var(--green-2);">+$2,510</div>
+        <div class="kpi-sub"><span class="delta-up">▲ 22.7%</span> vs Apr</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label"><span class="kpi-icon" style="background: var(--amber-soft); color: var(--amber);">🌱</span> Active Projects</div>
+        <div class="kpi-value" id="kpiProjects">6</div>
+        <div class="kpi-sub" id="kpiProjectsSub">
+          <span style="color: var(--green-2);">●</span>&nbsp;4 on plan
+          &nbsp;<span style="color: var(--amber);">●</span>&nbsp;1 warn
+          &nbsp;<span style="color: var(--red);">●</span>&nbsp;1 over
+        </div>
+      </div>
+    </div>
+
+    <div class="quick-actions" id="quickActions">
+      <button class="qa-btn primary" onclick="openExpenseModal()" data-role-allow="owner,spouse,manager,labourer">
+        <div class="qa-icon">＋</div> Add Expense
+      </button>
+      <button class="qa-btn" onclick="openIncomeModal()" data-role-allow="owner,spouse,manager">
+        <div class="qa-icon">💵</div> Add Income
+      </button>
+      <button class="qa-btn" onclick="go('livestock')" data-role-allow="owner,spouse,manager,labourer">
+        <div class="qa-icon">🐐</div> Livestock Event
+      </button>
+      <button class="qa-btn" onclick="go('report')" data-role-allow="owner,spouse,manager">
+        <div class="qa-icon">📄</div> Monthly Report
+      </button>
+    </div>
+
+    <div class="layout-2col">
+      <div>
+        <div class="section-header">
+          <div class="section-title" id="projectsSectionTitle">Active Projects</div>
+          <span class="link" onclick="go('projects')">View all →</span>
+        </div>
+        <div class="projects-grid" id="projectsMini"></div>
+
+        <div class="section-header">
+          <div class="section-title">Recent Activity</div>
+          <span class="link" onclick="toast('Audit log — Phase 2 module')">View audit log →</span>
+        </div>
+        <div class="card" id="activityList"></div>
+      </div>
+
+      <!-- Right panel -->
+      <div id="rightPanel">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Alerts</div>
+            <span class="pill pill-red">3</span>
+          </div>
+          <div>
+            <div class="list-item">
+              <div class="li-icon red">!</div>
+              <div class="li-content">
+                <div class="li-title">Broilers — Batch 12 over budget</div>
+                <div class="li-meta">108% used · mortality 4.8%</div>
+                <span class="li-action" onclick="openProject('broilers-12')">Review project →</span>
+              </div>
+            </div>
+            <div class="list-item">
+              <div class="li-icon amber">⚠</div>
+              <div class="li-content">
+                <div class="li-title">Layer feed running low</div>
+                <div class="li-meta">3 days at current rate</div>
+                <span class="li-action" onclick="toast('Order reminder sent to Manager')">Order feed →</span>
+              </div>
+            </div>
+            <div class="list-item" id="approvalsAlert">
+              <div class="li-icon amber">⚠</div>
+              <div class="li-content">
+                <div class="li-title">Expense awaiting approval</div>
+                <div class="li-meta">Tendai · $45.00 · Broilers</div>
+                <span class="li-action" onclick="go('approvals')">Approve · Reject</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+          <div class="card-header"><div class="card-title">Today's Tasks</div><span class="pill pill-green">5</span></div>
+          <div>
+            <div class="list-item"><div class="li-icon green">✓</div><div class="li-content"><div class="li-title">Vaccinate layer batch 4 (NCD)</div><div class="li-meta">Tafadzwa · 09:00</div></div></div>
+            <div class="list-item"><div class="li-icon green">✓</div><div class="li-content"><div class="li-title">Spray watermelon block B</div><div class="li-meta">Tendai · 06:30</div></div></div>
+            <div class="list-item"><div class="li-icon green">✓</div><div class="li-content"><div class="li-title">Weigh broiler sample (50 birds)</div><div class="li-meta">Tafadzwa · 11:00</div></div></div>
+            <div class="list-item"><div class="li-icon green">✓</div><div class="li-content"><div class="li-title">Goat herd headcount</div><div class="li-meta">Manager · 17:00</div></div></div>
+            <div class="list-item"><div class="li-icon green">✓</div><div class="li-content"><div class="li-title">Bella — pre-whelping check</div><div class="li-meta">Patrick · evening</div></div></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+          <div class="card-header"><div class="card-title">💡 Smart Insights</div></div>
+          <div class="card-body" style="font-size:13px; line-height:1.5;">
+            <div><strong>Broiler feed cost up 18%</strong> vs last batch. FCR of 1.85 is 0.10 worse than 12-month average.</div>
+            <div style="color:var(--grey-500); font-size:12px; margin-top:6px;">Check water quality and temperature in House 3.</div>
+            <hr style="border:0; border-top:1px solid var(--grey-100); margin: 12px 0;" />
+            <div><strong>Watermelon Block B</strong> tracking 22% under budget at day 35.</div>
+            <hr style="border:0; border-top:1px solid var(--grey-100); margin: 12px 0;" />
+            <div><strong>Layer eggs/day</strong> at 412 — 4% above your best previous batch at this age.</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+          <div class="card-header"><div class="card-title">Cash Position</div></div>
+          <div class="card-body">
+            <div class="kpi-label">Available cash</div>
+            <div style="font-size:22px; font-weight:700; margin: 6px 0;" id="cashTotal">$4,180.50</div>
+            <div style="font-size:12px; color:var(--grey-700); margin-bottom: 10px;">USD $3,240 · ZiG 22,648</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+              <div style="background: var(--green-soft); padding: 8px; border-radius: 8px;">
+                <div style="font-size:10px; color: var(--green); font-weight:700; text-transform:uppercase;">Receivables</div>
+                <div style="font-size:14px; font-weight:700; color: var(--green-2);">+$2,400</div>
+              </div>
+              <div style="background: var(--red-soft); padding: 8px; border-radius: 8px;">
+                <div style="font-size:10px; color: var(--red); font-weight:700; text-transform:uppercase;">Payables</div>
+                <div style="font-size:14px; font-weight:700; color: var(--red);">-$680</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- PROJECTS SCREEN -->
+  <div class="screen" id="screen-projects">
+    <h1 style="font-size:22px;">Projects</h1>
+    <div style="font-size:12px; color:var(--grey-700); margin-bottom: 16px;">Tap a project to drill in. <span class="link" onclick="openNewProject()">+ New project</span></div>
+    <div class="projects-grid" id="projectsAll"></div>
+  </div>
+
+  <!-- PROJECT DETAIL SCREEN -->
+  <div class="screen" id="screen-project-detail">
+    <button class="back-btn" onclick="go('projects')">← All projects</button>
+    <div id="projectDetailContent"></div>
+  </div>
+
+  <!-- LIVESTOCK SCREEN -->
+  <div class="screen" id="screen-livestock">
+    <h1 style="font-size:22px;">Livestock & Breeding</h1>
+    <div style="font-size:12px; color:var(--grey-700); margin-bottom:14px;">Real-time counts, gestation trackers, and health events.</div>
+
+    <div class="tabs" id="liveTabs">
+      <button class="tab active" data-livetab="counts">Counts</button>
+      <button class="tab" data-livetab="breeding">Breeding</button>
+      <button class="tab" data-livetab="health">Health</button>
+    </div>
+
+    <!-- Counts tab -->
+    <div id="livetab-counts">
+      <div class="kpi-row" id="liveCountsRow" style="grid-template-columns: repeat(3,1fr);">
+        <div class="kpi-card">
+          <div class="kpi-label">🐔 Laying flock</div>
+          <div class="kpi-value" id="layerCount">480</div>
+          <div class="kpi-sub">Lay rate: 86% · 412 eggs/day</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">🐤 Broiler flock</div>
+          <div class="kpi-value" id="broilerCount">897</div>
+          <div class="kpi-sub">Week 5 · mortality 4.8% (53)</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">🐐 Goat herd</div>
+          <div class="kpi-value" id="goatCount">48</div>
+          <div class="kpi-sub">3 born this month · 1 sold</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Quick log</div>
+          <button class="btn btn-primary btn-sm" onclick="openLivestockEvent()">+ Log event</button>
+        </div>
+        <div class="card-body" style="font-size:13px; line-height:1.6;">
+          Use the quick log to record births, deaths, sales, or transfers in seconds.<br />
+          <span style="color: var(--grey-500);">Formula: Stock<sub>current</sub> = Stock<sub>opening</sub> + Batch<sub>in</sub> + Births − Mortality − Sales − Transfers</span>
+        </div>
+      </div>
+
+      <div class="section-header"><div class="section-title">Recent livestock events</div></div>
+      <div class="card">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th><th>Group</th><th>Event</th><th class="right">Qty</th><th>Logged by</th>
+            </tr>
+          </thead>
+          <tbody id="livestockEventRows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Breeding tab -->
+    <div id="livetab-breeding" style="display:none;">
+      <div style="font-size: 13px; color: var(--grey-700); margin-bottom: 14px;">
+        Built-in gestation periods: canine <b>63d</b>, goat <b>150d</b>, sheep <b>147d</b>, pig <b>114d</b>, cattle <b>283d</b>. Override per animal.
+      </div>
+
+      <div id="breedingList"></div>
+
+      <button class="btn btn-primary" onclick="openMatingModal()" style="margin-top:8px;">+ Log mating</button>
+    </div>
+
+    <!-- Health tab -->
+    <div id="livetab-health" style="display:none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Upcoming vaccinations &amp; treatments</div>
+          <button class="btn btn-primary btn-sm" onclick="toast('Log treatment — opens form in next iteration')">+ Log treatment</button>
+        </div>
+        <table class="table">
+          <thead>
+            <tr><th>Animal / Group</th><th>Treatment</th><th>Due</th><th>Vet</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Layer Batch 4</td><td>Newcastle disease vaccine</td><td>Today</td><td>Dr Moyo</td><td><span class="pill pill-amber">Due today</span></td></tr>
+            <tr><td>Broiler Batch 12</td><td>Gumboro (booster)</td><td>2 days</td><td>Self-administered</td><td><span class="pill pill-grey">Upcoming</span></td></tr>
+            <tr><td>Bella (Boerboel)</td><td>Pre-whelping vet check</td><td>5 days</td><td>Dr Chikomo</td><td><span class="pill pill-amber">Upcoming</span></td></tr>
+            <tr><td>Goat herd</td><td>Deworming (next round)</td><td>14 days</td><td>—</td><td><span class="pill pill-grey">Scheduled</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MONTHLY REPORT SCREEN -->
+  <div class="screen" id="screen-report">
+    <div class="no-print" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px;">
+      <div>
+        <h1 style="font-size:20px;">Monthly Financial Report</h1>
+        <div style="font-size:12px; color:var(--grey-700);">May 2026 · Generated <span id="repGenDate"></span></div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <select id="repProject" class="btn btn-outline" onchange="renderReport()" style="padding:8px 12px;">
+          <option value="all">All projects (consolidated)</option>
+        </select>
+        <button class="btn btn-outline" onclick="window.print()">🖨 Print / PDF</button>
+        <button class="btn btn-primary" onclick="toast('✉ Report emailed to Owner (demo)')">✉ Email</button>
+      </div>
+    </div>
+    <div id="reportShell"></div>
+  </div>
+
+  <!-- APPROVALS SCREEN -->
+  <div class="screen" id="screen-approvals">
+    <h1 style="font-size:22px;">Approvals</h1>
+    <div style="font-size:12px; color:var(--grey-700); margin-bottom:14px;">Expenses above the configured threshold flow here. Owner / Co-owner approves.</div>
+    <div id="approvalsRoleHint"></div>
+    <div class="card" id="approvalsList"></div>
+  </div>
+
+</div>
+
+<!-- ============ MODALS ============ -->
+<!-- Add Expense -->
+<div class="modal-backdrop" id="modal-expense" onclick="if (event.target === this) closeModal('modal-expense')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Expense</h3>
+      <button class="close-btn" onclick="closeModal('modal-expense')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="exDate" />
+        </div>
+        <div class="field">
+          <label>Project</label>
+          <select id="exProject"></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Amount</label>
+          <input type="number" id="exAmount" placeholder="0.00" step="0.01" />
+        </div>
+        <div class="field">
+          <label>Currency</label>
+          <select id="exCcy"><option>USD</option><option>ZiG</option></select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <select id="exCategory">
+          <option>Feed</option><option>Veterinary</option><option>Seeds &amp; Inputs</option><option>Fertiliser</option>
+          <option>Fuel</option><option>Wages</option><option>Equipment</option><option>Transport</option>
+          <option>Repairs</option><option>Utilities</option><option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Vendor / Supplier</label>
+        <input type="text" id="exVendor" placeholder="e.g. National Foods" />
+      </div>
+      <div class="field">
+        <label>Payment method</label>
+        <select id="exMethod">
+          <option>Cash (USD)</option><option>Cash (ZiG)</option><option>EcoCash</option><option>OneMoney</option>
+          <option>ZIPIT</option><option>Bank Transfer</option><option>POS Card</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Note</label>
+        <textarea id="exNote" rows="2" placeholder="e.g. 50 kg layer feed for House 2"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-expense')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveExpense()">Save expense</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Income -->
+<div class="modal-backdrop" id="modal-income" onclick="if (event.target === this) closeModal('modal-income')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Record Sale / Income</h3>
+      <button class="close-btn" onclick="closeModal('modal-income')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field"><label>Date</label><input type="date" id="inDate" /></div>
+        <div class="field"><label>Project</label><select id="inProject"></select></div>
+      </div>
+      <div class="field"><label>Product</label><input type="text" id="inProduct" placeholder="e.g. Eggs, Watermelons, Live goat" /></div>
+      <div class="field-row">
+        <div class="field"><label>Quantity</label><input type="number" id="inQty" placeholder="0" /></div>
+        <div class="field"><label>Unit price</label><input type="number" id="inUnitPrice" placeholder="0.00" step="0.01" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Currency</label><select id="inCcy"><option>USD</option><option>ZiG</option></select></div>
+        <div class="field"><label>Payment status</label><select id="inStatus"><option>Paid</option><option>Partial</option><option>Outstanding</option></select></div>
+      </div>
+      <div class="field"><label>Buyer</label><input type="text" id="inBuyer" placeholder="e.g. Mr Chibanda" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-income')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveIncome()">Save income</button>
+    </div>
+  </div>
+</div>
+
+<!-- Livestock Event -->
+<div class="modal-backdrop" id="modal-livestock" onclick="if (event.target === this) closeModal('modal-livestock')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Log Livestock Event</h3>
+      <button class="close-btn" onclick="closeModal('modal-livestock')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field"><label>Date</label><input type="date" id="lvDate" /></div>
+        <div class="field"><label>Group</label>
+          <select id="lvGroup">
+            <option value="layers">Layer Chickens — Batch 4</option>
+            <option value="broilers">Broilers — Batch 12</option>
+            <option value="goats">Goats — Boer Cross Herd</option>
+            <option value="dogs">Boerboel Breeding</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Event type</label>
+          <select id="lvType">
+            <option value="birth">Birth / Hatch</option>
+            <option value="death">Mortality / Death</option>
+            <option value="sale">Sale</option>
+            <option value="purchase">Purchase</option>
+            <option value="transfer">Transfer</option>
+            <option value="weight">Weight check</option>
+          </select>
+        </div>
+        <div class="field"><label>Quantity</label><input type="number" id="lvQty" placeholder="e.g. 1" /></div>
+      </div>
+      <div class="field"><label>Note</label><textarea id="lvNote" rows="2" placeholder="e.g. Found dead this morning, possible heat stress"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-livestock')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLivestockEvent()">Save event</button>
+    </div>
+  </div>
+</div>
+
+<!-- Mating modal -->
+<div class="modal-backdrop" id="modal-mating" onclick="if (event.target === this) closeModal('modal-mating')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Log Mating</h3>
+      <button class="close-btn" onclick="closeModal('modal-mating')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Species</label>
+        <select id="brSpecies" onchange="updateGestation()">
+          <option value="canine" data-days="63">Canine (dog) — 63 days</option>
+          <option value="goat" data-days="150">Goat — 150 days</option>
+          <option value="sheep" data-days="147">Sheep — 147 days</option>
+          <option value="pig" data-days="114">Pig — 114 days</option>
+          <option value="cattle" data-days="283">Cattle — 283 days</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Dam (mother)</label><input type="text" id="brDam" placeholder="e.g. Bella" /></div>
+        <div class="field"><label>Sire (father)</label><input type="text" id="brSire" placeholder="e.g. Rex" /></div>
+      </div>
+      <div class="field"><label>Mating date</label><input type="date" id="brMate" onchange="updateGestation()" /></div>
+      <div class="field">
+        <label>Expected delivery (auto)</label>
+        <input type="text" id="brDue" readonly style="background: var(--grey-50); font-weight:700; color: var(--green);" />
+      </div>
+      <div class="field"><label>Note</label><textarea id="brNote" rows="2" placeholder="Optional"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-mating')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMating()">Save mating</button>
+    </div>
+  </div>
+</div>
+
+<!-- New project -->
+<div class="modal-backdrop" id="modal-newproject" onclick="if (event.target === this) closeModal('modal-newproject')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>New Project</h3>
+      <button class="close-btn" onclick="closeModal('modal-newproject')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Name</label><input type="text" id="npName" placeholder="e.g. Cabbage — Block C" /></div>
+      <div class="field-row">
+        <div class="field"><label>Category</label>
+          <select id="npCategory">
+            <option value="crop">🌱 Crop</option>
+            <option value="poultry">🐔 Poultry</option>
+            <option value="livestock">🐐 Livestock</option>
+            <option value="breeding">🐕 Breeding</option>
+            <option value="custom">⚙ Custom</option>
+          </select>
+        </div>
+        <div class="field"><label>Start date</label><input type="date" id="npStart" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Budget (USD)</label><input type="number" id="npBudget" placeholder="0" /></div>
+        <div class="field"><label>Status</label><select id="npStatus"><option>Active</option><option>Paused</option></select></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-newproject')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNewProject()">Create project</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">✓ Saved</div>
+
+<script>
+/* ============================================================
+   FarmLedger Prototype State
+   ============================================================ */
+
+const FX = 6.99; // 1 USD = 6.99 ZiG (illustrative)
+const STORE_KEY = 'farmledger_demo_v1';
+
+// Initial seed data — what testers see on first load / after reset
+const SEED = {
+  user: { role: 'owner' },
+  currency: 'USD',
+  projects: [
+    { id: 'watermelon-b', name: 'Watermelon — Block B', category: 'crop', icon: '🍉', iconClass: 'icon-crop', meta: 'Crop · Sugar Baby · 2.5 ha',
+      status: 'green', spent: 420, revenue: 0, budget: 1200, projectedGross: 3200, info: 'Day 35 / 85 · Flowering in 10 days' },
+    { id: 'layers-4', name: 'Layer Chickens — Batch 4', category: 'poultry', icon: '🐔', iconClass: 'icon-poultry', meta: 'Poultry · 480 birds · Week 28',
+      status: 'green', spent: 1340, revenue: 2180, budget: 1500, info: '412 eggs/day · 86% lay rate' },
+    { id: 'goats', name: 'Goats — Boer Cross Herd', category: 'livestock', icon: '🐐', iconClass: 'icon-livestock', meta: 'Livestock · 48 head',
+      status: 'amber', spent: 680, revenue: 520, budget: 800, info: 'Vet cost up 24% — review feed mix' },
+    { id: 'boerboel', name: 'Boerboel Breeding Programme', category: 'breeding', icon: '🐕', iconClass: 'icon-breeding', meta: 'Breeding · 3 dams · 2 sires',
+      status: 'green', spent: 310, revenue: 0, budget: 750, projectedGross: 2400, info: 'Bella whelping in 12 days (day 51/63)' },
+    { id: 'broilers-12', name: 'Broilers — Batch 12', category: 'poultry', icon: '🐤', iconClass: 'icon-poultry', meta: 'Poultry · 897 birds · Week 5',
+      status: 'red', spent: 1920, revenue: 0, budget: 1780, info: 'Mortality 4.8% (target ≤ 3%) · FCR 1.85' },
+    { id: 'maize-a', name: 'Maize — Block A', category: 'crop', icon: '🌽', iconClass: 'icon-crop', meta: 'Crop · 4 ha · Harvested',
+      status: 'green', spent: 2140, revenue: 3700, budget: 2250, info: 'Cycle complete · 18.4 t harvested · +$1,560 net' },
+  ],
+  transactions: [
+    // sample expenses
+    { id:'t1', projectId:'broilers-12', date:'2026-05-19', type:'expense', category:'Feed', amount:45, currency:'USD', vendor:'National Foods', method:'EcoCash', note:'50 kg broiler starter', user:'Tendai', status:'pending' },
+    { id:'t2', projectId:'goats', date:'2026-05-18', type:'expense', category:'Veterinary', amount:180, currency:'USD', vendor:'Dr Moyo', method:'Bank Transfer', note:'Visit + dewormer', user:'Manager', status:'approved' },
+    { id:'t3', projectId:'layers-4', date:'2026-05-17', type:'income', category:'Sales', amount:280, currency:'USD', vendor:'Market', method:'Cash (USD)', note:'120 trays eggs', user:'Patrick', status:'approved' },
+    { id:'t4', projectId:'watermelon-b', date:'2026-05-15', type:'expense', category:'Fertiliser', amount:95, currency:'USD', vendor:'Windmill', method:'EcoCash', note:'Compound D 50kg', user:'Tendai', status:'approved' },
+    { id:'t5', projectId:'broilers-12', date:'2026-05-12', type:'expense', category:'Feed', amount:540, currency:'USD', vendor:'National Foods', method:'Bank Transfer', note:'Bulk feed delivery', user:'Manager', status:'approved' },
+    { id:'t6', projectId:'maize-a', date:'2026-05-09', type:'income', category:'Sales', amount:3700, currency:'USD', vendor:'GMB', method:'Bank Transfer', note:'18.4 t maize sale', user:'Patrick', status:'approved' },
+  ],
+  livestockEvents: [
+    { date:'2026-05-19', group:'broilers', type:'death', qty:8, note:'Heat stress House 3', user:'Tafadzwa' },
+    { date:'2026-05-18', group:'layers', type:'sale', qty:5, note:'Culled non-layers', user:'Patrick' },
+    { date:'2026-05-15', group:'goats', type:'birth', qty:2, note:'Twins from Tariro', user:'Manager' },
+    { date:'2026-05-12', group:'broilers', type:'death', qty:12, note:'House 3 — under investigation', user:'Tafadzwa' },
+    { date:'2026-05-08', group:'goats', type:'birth', qty:1, note:'Single kid from Rufaro', user:'Manager' },
+  ],
+  breeding: [
+    { dam: 'Bella', sire: 'Rex', species: 'canine', matingDate: '2026-03-31', days: 63, note: 'First litter for Bella · expected 6–8 puppies' },
+    { dam: 'Daisy', sire: 'Rex', species: 'canine', matingDate: '2026-05-10', days: 63, note: 'Second-time mother' },
+    { dam: 'Tariro', sire: 'Boer buck', species: 'goat', matingDate: '2026-01-15', days: 150, note: 'Already kidded — twins on 2026-05-15' },
+  ],
+  activity: [
+    { text: '<strong>Tendai</strong> recorded an expense: <strong>$45.00</strong> — Feed (50 kg) on <strong>Broilers — Batch 12</strong>', meta: '2 hours ago · awaiting approval' },
+    { text: '<strong>System</strong> auto-generated a reminder: Bella due for pre-whelping check (12 days)', meta: '5 hours ago' },
+    { text: '<strong>Spouse</strong> approved <strong>$180.00</strong> vet visit on <strong>Goats — Boer Cross Herd</strong>', meta: 'Yesterday · 16:42' },
+    { text: '<strong>Tafadzwa</strong> logged 412 eggs collected on <strong>Layer Chickens — Batch 4</strong>', meta: 'Yesterday · 07:15' },
+    { text: '<strong>Patrick</strong> closed cycle on <strong>Maize — Block A</strong> with 18.4 t yield · $1,560 net', meta: '2 days ago' },
+  ],
+};
+
+// Empty state — for testers who want to use the app as a real new user
+const EMPTY = {
+  user: { role: 'owner' },
+  currency: 'USD',
+  projects: [],
+  transactions: [],
+  livestockEvents: [],
+  breeding: [],
+  activity: [],
+};
+
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return JSON.parse(JSON.stringify(SEED));
+    return JSON.parse(raw);
+  } catch (e) {
+    return JSON.parse(JSON.stringify(SEED));
+  }
+}
+function saveState() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+
+function startFresh() {
+  if (!confirm('Start with an EMPTY farm? This clears all current data and gives you a blank slate to set up your own farm and projects.')) return;
+  localStorage.removeItem(STORE_KEY);
+  state = JSON.parse(JSON.stringify(EMPTY));
+  saveState();
+  initApp();
+  go('dashboard');
+  toast('🌱 Fresh start — create your first project');
+}
+
+function resetDemo() {
+  if (!confirm('Load the SAMPLE farm data (Watermelon, Layers, Goats, Boerboels, Broilers, Maize)?\n\nThis replaces anything you have entered.')) return;
+  localStorage.removeItem(STORE_KEY);
+  state = JSON.parse(JSON.stringify(SEED));
+  initApp();
+  toast('Demo data reset to defaults');
+}
+
+/* ============================================================
+   ROLES — RBAC demo
+   ============================================================ */
+const ROLE_LABELS = { owner: 'Patrick (Owner)', spouse: 'Spouse', manager: 'Manager', labourer: 'Tendai (Labourer)' };
+const ROLE_INITIAL = { owner: 'P', spouse: 'S', manager: 'M', labourer: 'T' };
+
+const NAV_ROLES = {
+  dashboard: ['owner','spouse','manager','labourer'],
+  projects: ['owner','spouse','manager','labourer'],
+  livestock: ['owner','spouse','manager','labourer'],
+  report: ['owner','spouse','manager'],
+  approvals: ['owner','spouse'],
+};
+
+function applyRole() {
+  const role = state.user.role;
+  document.getElementById('avatar').textContent = ROLE_INITIAL[role];
+  document.getElementById('greetLine').textContent = role === 'owner' ? 'Good morning, Patrick.' :
+    role === 'spouse' ? 'Good morning, Tendai (Patrick\'s spouse).' :
+    role === 'manager' ? 'Good morning, Manager.' : 'Good morning, Tendai.';
+
+  // Hide nav items not allowed
+  document.querySelectorAll('.nav-item').forEach(n => {
+    const s = n.dataset.screen;
+    n.style.display = NAV_ROLES[s].includes(role) ? '' : 'none';
+  });
+
+  // Hide quick actions not allowed
+  document.querySelectorAll('[data-role-allow]').forEach(el => {
+    const allowed = el.dataset.roleAllow.split(',');
+    el.classList.toggle('disabled-by-role', !allowed.includes(role));
+  });
+
+  // Approvals hint
+  const hint = document.getElementById('approvalsRoleHint');
+  if (role === 'owner' || role === 'spouse') {
+    hint.innerHTML = '<div class="rbac-hint">🔓 You are <b>' + ROLE_LABELS[role] + '</b>. You can approve or reject expenses.</div>';
+  } else {
+    hint.innerHTML = '<div class="rbac-hint">🔒 You are <b>' + ROLE_LABELS[role] + '</b>. Only Owner and Co-owner can approve expenses.</div>';
+  }
+}
+
+document.getElementById('roleSelect').addEventListener('change', e => {
+  state.user.role = e.target.value;
+  saveState();
+  applyRole();
+  // If current screen no longer allowed, fall back to dashboard
+  const current = document.querySelector('.nav-item.active').dataset.screen;
+  if (!NAV_ROLES[current].includes(state.user.role)) go('dashboard');
+});
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function go(screen) {
+  if (!NAV_ROLES[screen].includes(state.user.role)) {
+    toast('🔒 Not allowed for ' + ROLE_LABELS[state.user.role]);
+    return;
+  }
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + screen).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.screen === screen));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (screen === 'report') renderReport();
+  if (screen === 'approvals') renderApprovals();
+  if (screen === 'livestock') renderLivestockEvents();
+  if (screen === 'projects') renderProjectsAll();
+  if (screen === 'dashboard') renderDashboard();
+}
+
+document.querySelectorAll('.nav-item').forEach(b => {
+  b.addEventListener('click', () => go(b.dataset.screen));
+});
+
+/* ============================================================
+   CURRENCY
+   ============================================================ */
+function setCurrency(ccy) {
+  state.currency = ccy;
+  saveState();
+  document.querySelectorAll('.ccy-toggle button').forEach(b => b.classList.toggle('active', b.dataset.ccy === ccy));
+  document.getElementById('ccyLabel').textContent = ccy === 'USD' ? 'USD' : 'ZiG';
+  renderDashboard();
+  renderProjectsAll();
+}
+document.querySelectorAll('.ccy-toggle button').forEach(b => b.addEventListener('click', () => setCurrency(b.dataset.ccy)));
+
+function fmt(amount, opts = {}) {
+  const ccy = state.currency;
+  const factor = ccy === 'ZIG' ? FX : 1;
+  const value = amount * factor;
+  const sign = value < 0 ? '-' : (opts.showPlus && value > 0 ? '+' : '');
+  const abs = Math.abs(value);
+  const formatted = abs.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return ccy === 'USD' ? `${sign}$${formatted}` : `${sign}ZiG ${formatted}`;
+}
+
+/* ============================================================
+   RENDER: DASHBOARD
+   ============================================================ */
+function renderDashboard() {
+  const isEmpty = state.projects.length === 0;
+
+  // Compute KPIs from transactions
+  const txs = state.transactions;
+  const income = txs.filter(t => t.type === 'income').reduce((a,t) => a + t.amount, 0);
+  const expenses = txs.filter(t => t.type === 'expense').reduce((a,t) => a + t.amount, 0);
+  const net = income - expenses;
+
+  document.getElementById('kpiIncome').textContent = fmt(income);
+  document.getElementById('kpiExpenses').textContent = fmt(expenses);
+  document.getElementById('kpiNet').textContent = fmt(net, { showPlus: true });
+  document.getElementById('kpiNet').style.color = net >= 0 ? 'var(--green-2)' : 'var(--red)';
+  document.getElementById('kpiProjects').textContent = state.projects.length;
+  const sub = document.getElementById('kpiProjectsSub');
+  if (sub) {
+    const g = state.projects.filter(p => p.status === 'green').length;
+    const a = state.projects.filter(p => p.status === 'amber').length;
+    const r = state.projects.filter(p => p.status === 'red').length;
+    sub.innerHTML = state.projects.length === 0 ? '&nbsp;' :
+      `<span style="color: var(--green-2);">●</span>&nbsp;${g} on plan &nbsp;` +
+      `<span style="color: var(--amber);">●</span>&nbsp;${a} warn &nbsp;` +
+      `<span style="color: var(--red);">●</span>&nbsp;${r} over`;
+  }
+
+  // Hide right panel (Alerts, Tasks, Insights, Cash) when farm is empty — those are demo placeholders
+  const rp = document.getElementById('rightPanel');
+  if (rp) rp.style.display = isEmpty ? 'none' : '';
+
+  // Hide the hardcoded "vs Apr" sub-text and demo-only KPI subtitles when empty
+  document.querySelectorAll('#screen-dashboard .kpi-sub').forEach(el => {
+    el.style.display = isEmpty ? 'none' : '';
+  });
+
+  // Adjust the greeting + page subtitle for empty state
+  const greet = document.getElementById('greetLine');
+  if (greet) greet.textContent = isEmpty
+    ? 'Welcome to FarmLedger. Let\'s set up your farm.'
+    : (state.user.role === 'owner' ? 'Good morning, Patrick.' : ('Good morning, ' + ROLE_LABELS[state.user.role] + '.'));
+
+  // Projects mini grid (top 6)
+  if (state.projects.length === 0) {
+    document.getElementById('projectsMini').innerHTML = `
+      <div style="grid-column: 1/-1; text-align: center; padding: 36px 16px; background: var(--white); border-radius: var(--radius); border: 2px dashed var(--grey-300);">
+        <div style="font-size: 40px; margin-bottom: 6px;">🌱</div>
+        <div style="font-weight: 700; font-size: 16px; margin-bottom: 4px;">Your farm is empty</div>
+        <div style="font-size: 13px; color: var(--grey-700); margin-bottom: 14px; max-width: 420px; margin-left: auto; margin-right: auto;">
+          Start by creating your first project — for example "Watermelon Block A", "Layer Chickens", or "Goat Herd".
+        </div>
+        <button class="btn btn-primary" onclick="openNewProject()">+ Create your first project</button>
+        <div style="font-size: 11px; color: var(--grey-500); margin-top: 10px;">
+          Or tap <b>Demo data</b> at the top to load a sample farm.
+        </div>
+      </div>`;
+  } else {
+    document.getElementById('projectsMini').innerHTML = state.projects.map(p => projectCardHTML(p)).join('');
+  }
+
+  // Activity
+  if (state.activity.length === 0) {
+    document.getElementById('activityList').innerHTML = `
+      <div style="padding: 24px 16px; text-align: center; color: var(--grey-500); font-size: 13px;">
+        No activity yet. Recorded entries will appear here.
+      </div>`;
+  } else {
+    document.getElementById('activityList').innerHTML = state.activity.map(a => `
+      <div class="list-item">
+        <div class="li-icon green">●</div>
+        <div class="li-content">
+          <div class="li-title" style="font-weight:500;">${a.text}</div>
+          <div class="li-meta">${a.meta}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Approvals badge
+  const pending = state.transactions.filter(t => t.status === 'pending').length;
+  document.getElementById('approvalsPill').textContent = pending;
+  document.getElementById('notifBadge').textContent = state.activity.length === 0 ? 0 : pending + 2;
+}
+
+function projectCardHTML(p, large = false) {
+  const used = p.budget > 0 ? Math.round((p.spent / p.budget) * 100) : 0;
+  const fillClass = used > 100 ? 'red' : used > 80 ? 'amber' : '';
+  const fillWidth = Math.min(used, 110);
+  const net = (p.revenue || 0) - (p.spent || 0);
+  return `
+    <div class="project-card status-${p.status}" onclick="openProject('${p.id}')">
+      <div class="project-head">
+        <div class="project-icon ${p.iconClass}">${p.icon}</div>
+        <div>
+          <div class="project-name">${p.name}</div>
+          <div class="project-meta">${p.meta}</div>
+        </div>
+        <div class="status-dot ${p.status}"></div>
+      </div>
+      <div style="font-size:12px; color: var(--grey-700);">${p.info}</div>
+      <div class="project-stats">
+        <div>
+          <div class="stat-label">Spent (mo)</div>
+          <div class="stat-value">${fmt(p.spent)}</div>
+        </div>
+        <div>
+          <div class="stat-label">${p.revenue > 0 ? 'Revenue' : (p.projectedGross ? 'Proj. gross' : 'Margin')}</div>
+          <div class="stat-value ${ (p.revenue||p.projectedGross) ? 'positive' : ''}">${fmt(p.revenue || p.projectedGross || net)}</div>
+        </div>
+      </div>
+      <div class="budget-bar"><div class="budget-fill ${fillClass}" style="width: ${fillWidth}%;"></div></div>
+      <div class="budget-row"><span>Budget: ${fmt(p.budget)}</span><span style="${used > 100 ? 'color: var(--red); font-weight:700;' : ''}">${used}% used</span></div>
+    </div>`;
+}
+
+function renderProjectsAll() {
+  document.getElementById('projectsAll').innerHTML = state.projects.map(p => projectCardHTML(p)).join('');
+}
+
+/* ============================================================
+   PROJECT DETAIL
+   ============================================================ */
+function openProject(id) {
+  const p = state.projects.find(x => x.id === id);
+  if (!p) return;
+  const txs = state.transactions.filter(t => t.projectId === id);
+  const spent = txs.filter(t => t.type === 'expense').reduce((a,t)=>a+t.amount,0);
+  const income = txs.filter(t => t.type === 'income').reduce((a,t)=>a+t.amount,0);
+  const net = income - spent;
+  const used = p.budget > 0 ? Math.round((spent / p.budget) * 100) : 0;
+
+  const txRows = txs.length === 0 ?
+    `<tr><td colspan="6" class="empty">No transactions yet on this project</td></tr>` :
+    txs.sort((a,b) => b.date.localeCompare(a.date)).map(t => `
+    <tr>
+      <td>${t.date}</td>
+      <td><span class="pill ${t.type === 'income' ? 'pill-green' : 'pill-grey'}">${t.type}</span></td>
+      <td>${t.category}</td>
+      <td>${t.vendor || t.note || '—'}</td>
+      <td class="right" style="font-weight:700; color: ${t.type === 'income' ? 'var(--green-2)' : 'var(--grey-900)'};">${t.type === 'income' ? '+' : '−'}${fmt(t.amount)}</td>
+      <td><span class="pill ${t.status === 'approved' ? 'pill-green' : 'pill-amber'}">${t.status}</span></td>
+    </tr>`).join('');
+
+  document.getElementById('projectDetailContent').innerHTML = `
+    <div style="display:flex; gap:14px; align-items:center; margin-bottom:14px;">
+      <div class="project-icon ${p.iconClass}" style="width:54px; height:54px; font-size:26px;">${p.icon}</div>
+      <div style="flex:1;">
+        <h1 style="font-size:22px;">${p.name}</h1>
+        <div style="font-size:13px; color:var(--grey-700);">${p.meta} · ${p.info}</div>
+      </div>
+      <span class="pill ${p.status === 'green' ? 'pill-green' : p.status === 'amber' ? 'pill-amber' : 'pill-red'}">${p.status === 'green' ? 'On plan' : p.status === 'amber' ? 'Warning' : 'Over budget'}</span>
+    </div>
+
+    <div class="kpi-row" style="grid-template-columns: repeat(4,1fr);">
+      <div class="kpi-card"><div class="kpi-label">Revenue (mo)</div><div class="kpi-value" style="color: var(--green-2);">${fmt(income)}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Expenses (mo)</div><div class="kpi-value">${fmt(spent)}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Net</div><div class="kpi-value" style="color: ${net >= 0 ? 'var(--green-2)' : 'var(--red)'};">${net >= 0 ? '+' : ''}${fmt(net)}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Budget used</div><div class="kpi-value" style="color: ${used > 100 ? 'var(--red)' : 'var(--grey-900)'};">${used}%</div><div class="kpi-sub">${fmt(p.budget)} budget</div></div>
+    </div>
+
+    <div style="display:flex; gap:8px; margin: 16px 0;">
+      <button class="btn btn-primary" onclick="openExpenseModalFor('${p.id}')">＋ Add expense</button>
+      <button class="btn btn-outline" onclick="openIncomeModalFor('${p.id}')">＋ Add income</button>
+      <button class="btn btn-outline" onclick="toast('Edit project — Phase 2')">⚙ Edit project</button>
+    </div>
+
+    <h3 style="font-size:14px; margin: 16px 0 10px; text-transform:uppercase; letter-spacing:0.5px; color: var(--grey-500);">Transactions</h3>
+    <div class="card">
+      <table class="table">
+        <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Note</th><th class="right">Amount</th><th>Status</th></tr></thead>
+        <tbody>${txRows}</tbody>
+      </table>
+    </div>
+
+    ${p.category === 'crop' ? `
+      <h3 style="font-size:14px; margin: 22px 0 10px; text-transform:uppercase; letter-spacing:0.5px; color: var(--grey-500);">Lifecycle</h3>
+      <div class="card card-body">
+        ${cropTimeline(p)}
+      </div>` : ''}
+
+    ${p.category === 'breeding' ? `
+      <h3 style="font-size:14px; margin: 22px 0 10px; text-transform:uppercase; letter-spacing:0.5px; color: var(--grey-500);">Breeding (live)</h3>
+      <div class="card card-body">${state.breeding.filter(b => b.species==='canine').map(b => breedingRowHTML(b)).join('')}</div>` : ''}
+  `;
+
+  go('project-detail-internal');
+  // Reveal the screen manually because it's not in NAV
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-project-detail').classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.screen === 'projects'));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cropTimeline(p) {
+  // hardcoded watermelon lifecycle for demo
+  const stages = [
+    { day: 0, label: 'Sowing', done: true },
+    { day: 7, label: 'Germination', done: true },
+    { day: 25, label: 'Vine establishment', done: true },
+    { day: 45, label: 'Flowering', done: false, current: true },
+    { day: 55, label: 'Fruit set', done: false },
+    { day: 85, label: 'Harvest', done: false },
+  ];
+  return `
+    <div style="font-size:12px; color: var(--grey-500); margin-bottom:8px;">Day 35 / 85 — Sugar Baby variety, sown 2026-04-16</div>
+    <div style="display:grid; grid-template-columns: repeat(${stages.length}, 1fr); gap: 4px;">
+      ${stages.map(s => `
+        <div style="text-align:center;">
+          <div style="width:24px; height:24px; margin:0 auto 4px; border-radius:50%;
+            background: ${s.done ? 'var(--green-2)' : s.current ? 'var(--amber)' : 'var(--grey-200)'};
+            color: white; display:grid; place-items:center; font-size:12px;
+            box-shadow: ${s.current ? '0 0 0 4px var(--amber-soft)' : 'none'};">
+            ${s.done ? '✓' : s.current ? '●' : '·'}
+          </div>
+          <div style="font-size:11px; font-weight:600; color: ${s.current ? 'var(--amber)' : s.done ? 'var(--green-2)' : 'var(--grey-500)'};">${s.label}</div>
+          <div style="font-size:10px; color: var(--grey-500);">+${s.day}d</div>
+        </div>`).join('')}
+    </div>
+  `;
+}
+
+function openExpenseModalFor(projectId) {
+  openExpenseModal(projectId);
+}
+function openIncomeModalFor(projectId) {
+  openIncomeModal(projectId);
+}
+
+/* ============================================================
+   MODALS — open/close
+   ============================================================ */
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function openExpenseModal(presetProject) {
+  const sel = document.getElementById('exProject');
+  sel.innerHTML = state.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  if (presetProject) sel.value = presetProject;
+  document.getElementById('exDate').valueAsDate = new Date('2026-05-21');
+  openModal('modal-expense');
+}
+function openIncomeModal(presetProject) {
+  const sel = document.getElementById('inProject');
+  sel.innerHTML = state.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  if (presetProject) sel.value = presetProject;
+  document.getElementById('inDate').valueAsDate = new Date('2026-05-21');
+  openModal('modal-income');
+}
+
+function saveExpense() {
+  const amount = parseFloat(document.getElementById('exAmount').value);
+  if (!amount || amount <= 0) { alert('Enter a valid amount'); return; }
+  const tx = {
+    id: 't' + Date.now(),
+    projectId: document.getElementById('exProject').value,
+    date: document.getElementById('exDate').value,
+    type: 'expense',
+    category: document.getElementById('exCategory').value,
+    amount: amount,
+    currency: document.getElementById('exCcy').value,
+    vendor: document.getElementById('exVendor').value || '',
+    method: document.getElementById('exMethod').value,
+    note: document.getElementById('exNote').value || '',
+    user: ROLE_LABELS[state.user.role],
+    status: amount >= 100 ? 'pending' : 'approved'
+  };
+  state.transactions.unshift(tx);
+  // update project spent (only if approved; pending too for demo simplicity)
+  const proj = state.projects.find(p => p.id === tx.projectId);
+  if (proj) proj.spent += amount * (tx.currency === 'ZIG' ? 1/FX : 1);
+  state.activity.unshift({ text: `<strong>${tx.user}</strong> recorded an expense: <strong>${fmt(amount)}</strong> — ${tx.category} on <strong>${proj.name}</strong>`, meta: 'Just now' });
+  saveState();
+  closeModal('modal-expense');
+  document.getElementById('exAmount').value = '';
+  document.getElementById('exVendor').value = '';
+  document.getElementById('exNote').value = '';
+  renderDashboard();
+  if (tx.status === 'pending') toast('✓ Saved · sent for approval (≥ $100)');
+  else toast('✓ Expense saved');
+}
+
+function saveIncome() {
+  const qty = parseFloat(document.getElementById('inQty').value) || 1;
+  const unit = parseFloat(document.getElementById('inUnitPrice').value);
+  if (!unit || unit <= 0) { alert('Enter unit price'); return; }
+  const amount = qty * unit;
+  const tx = {
+    id: 't' + Date.now(),
+    projectId: document.getElementById('inProject').value,
+    date: document.getElementById('inDate').value,
+    type: 'income',
+    category: 'Sales',
+    amount: amount,
+    currency: document.getElementById('inCcy').value,
+    vendor: document.getElementById('inBuyer').value || 'Market',
+    method: 'Cash',
+    note: `${qty} × ${document.getElementById('inProduct').value}`,
+    user: ROLE_LABELS[state.user.role],
+    status: 'approved'
+  };
+  state.transactions.unshift(tx);
+  const proj = state.projects.find(p => p.id === tx.projectId);
+  if (proj) proj.revenue = (proj.revenue || 0) + amount * (tx.currency === 'ZIG' ? 1/FX : 1);
+  state.activity.unshift({ text: `<strong>${tx.user}</strong> recorded income: <strong>+${fmt(amount)}</strong> — ${tx.note} on <strong>${proj.name}</strong>`, meta: 'Just now' });
+  saveState();
+  closeModal('modal-income');
+  ['inQty','inUnitPrice','inBuyer','inProduct'].forEach(id => document.getElementById(id).value = '');
+  renderDashboard();
+  toast('✓ Income saved');
+}
+
+/* ============================================================
+   LIVESTOCK
+   ============================================================ */
+const liveTabs = document.querySelectorAll('[data-livetab]');
+liveTabs.forEach(t => t.addEventListener('click', () => {
+  liveTabs.forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  ['counts','breeding','health'].forEach(name => {
+    document.getElementById('livetab-' + name).style.display = name === t.dataset.livetab ? '' : 'none';
+  });
+  if (t.dataset.livetab === 'breeding') renderBreeding();
+}));
+
+function openLivestockEvent() {
+  document.getElementById('lvDate').valueAsDate = new Date('2026-05-21');
+  openModal('modal-livestock');
+}
+function saveLivestockEvent() {
+  const qty = parseInt(document.getElementById('lvQty').value);
+  if (!qty || qty <= 0) { alert('Enter a quantity'); return; }
+  const ev = {
+    date: document.getElementById('lvDate').value,
+    group: document.getElementById('lvGroup').value,
+    type: document.getElementById('lvType').value,
+    qty: qty,
+    note: document.getElementById('lvNote').value,
+    user: ROLE_LABELS[state.user.role],
+  };
+  state.livestockEvents.unshift(ev);
+  saveState();
+  closeModal('modal-livestock');
+  document.getElementById('lvQty').value = '';
+  document.getElementById('lvNote').value = '';
+  renderLivestockEvents();
+  toast(`✓ ${ev.type} logged: ${qty}`);
+}
+
+function renderLivestockEvents() {
+  // Hide the hardcoded count cards when the farm is empty (no projects = no livestock yet)
+  const countsRow = document.getElementById('liveCountsRow');
+  if (countsRow) countsRow.style.display = state.projects.length === 0 ? 'none' : '';
+
+  const groupLabels = { layers: 'Layers Batch 4', broilers: 'Broilers Batch 12', goats: 'Goat Herd', dogs: 'Boerboel Breeding' };
+  if (state.livestockEvents.length === 0) {
+    document.getElementById('livestockEventRows').innerHTML = `
+      <tr><td colspan="5" style="text-align:center; color: var(--grey-500); padding: 24px; font-size: 13px;">
+        No livestock events yet. Tap <b>+ Log event</b> above to record births, deaths, sales or purchases.
+      </td></tr>`;
+    return;
+  }
+  const rows = state.livestockEvents.map(e => `
+    <tr>
+      <td>${e.date}</td>
+      <td>${groupLabels[e.group] || e.group}</td>
+      <td><span class="pill ${e.type === 'birth' ? 'pill-green' : e.type === 'death' ? 'pill-red' : 'pill-grey'}">${e.type}</span></td>
+      <td class="right" style="font-weight:700;">${e.qty}</td>
+      <td>${e.user}</td>
+    </tr>`).join('');
+  document.getElementById('livestockEventRows').innerHTML = rows;
+}
+
+/* ============================================================
+   BREEDING (gestation tracker)
+   ============================================================ */
+function updateGestation() {
+  const days = parseInt(document.getElementById('brSpecies').selectedOptions[0].dataset.days);
+  const mate = document.getElementById('brMate').value;
+  if (mate) {
+    const d = new Date(mate);
+    d.setDate(d.getDate() + days);
+    document.getElementById('brDue').value = d.toISOString().slice(0,10) + ` (in ${days} days)`;
+  } else {
+    document.getElementById('brDue').value = `+${days} days from mating`;
+  }
+}
+
+function openMatingModal() {
+  document.getElementById('brMate').valueAsDate = new Date('2026-05-21');
+  document.getElementById('brDam').value = '';
+  document.getElementById('brSire').value = '';
+  document.getElementById('brNote').value = '';
+  updateGestation();
+  openModal('modal-mating');
+}
+function saveMating() {
+  const dam = document.getElementById('brDam').value;
+  const sire = document.getElementById('brSire').value;
+  const mate = document.getElementById('brMate').value;
+  if (!dam || !mate) { alert('Dam and mating date are required'); return; }
+  const species = document.getElementById('brSpecies').value;
+  const days = parseInt(document.getElementById('brSpecies').selectedOptions[0].dataset.days);
+  state.breeding.unshift({ dam, sire, species, matingDate: mate, days, note: document.getElementById('brNote').value });
+  saveState();
+  closeModal('modal-mating');
+  renderBreeding();
+  toast(`✓ Mating logged · expected delivery in ${days} days`);
+}
+
+function breedingRowHTML(b) {
+  const today = new Date('2026-05-21');
+  const mate = new Date(b.matingDate);
+  const due = new Date(mate);
+  due.setDate(due.getDate() + b.days);
+  const daysElapsed = Math.floor((today - mate) / 86400000);
+  const daysLeft = b.days - daysElapsed;
+  let cdClass = '';
+  let label = '';
+  if (daysLeft < 0) { cdClass = 'due'; label = `${Math.abs(daysLeft)}d OVERDUE — delivery expected`; }
+  else if (daysLeft === 0) { cdClass = 'due'; label = 'DUE TODAY — delivery expected'; }
+  else if (daysLeft <= 14) { cdClass = 'urgent'; label = `${daysLeft}d to delivery`; }
+  else { label = `${daysLeft}d to delivery`; }
+  const speciesIcon = { canine: '🐕', goat: '🐐', sheep: '🐑', pig: '🐖', cattle: '🐄' }[b.species];
+  return `
+    <div class="animal-card">
+      <div class="animal-head">
+        <div class="animal-icon">${speciesIcon}</div>
+        <div style="flex:1;">
+          <div style="font-weight:700;">${b.dam} <span style="font-weight:400; color: var(--grey-500);">× ${b.sire || '—'}</span></div>
+          <div style="font-size:12px; color: var(--grey-500);">${b.species} · gestation ${b.days}d · mated ${b.matingDate}</div>
+        </div>
+        <div style="text-align:right; font-size:12px; color:var(--grey-500);">Expected<br /><span style="font-weight:700; color:var(--grey-900); font-size:13px;">${due.toISOString().slice(0,10)}</span></div>
+      </div>
+      <div class="countdown ${cdClass}">
+        <div class="cd-days ${cdClass}">${daysLeft >= 0 ? daysLeft : Math.abs(daysLeft)}</div>
+        <div>
+          <div style="font-weight:700;">${label}</div>
+          <div style="font-size:12px; color: var(--grey-700);">${b.note || ''}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderBreeding() {
+  const html = state.breeding.map(b => breedingRowHTML(b)).join('');
+  document.getElementById('breedingList').innerHTML = html || '<div class="empty">No mating events logged yet.</div>';
+}
+
+/* ============================================================
+   APPROVALS
+   ============================================================ */
+function renderApprovals() {
+  const pending = state.transactions.filter(t => t.status === 'pending');
+  const role = state.user.role;
+  const canApprove = role === 'owner' || role === 'spouse';
+
+  if (pending.length === 0) {
+    document.getElementById('approvalsList').innerHTML = '<div class="empty">No expenses awaiting approval right now.</div>';
+    return;
+  }
+
+  const rows = pending.map(t => {
+    const p = state.projects.find(x => x.id === t.projectId);
+    return `
+      <div class="list-item" style="padding: 14px 16px;">
+        <div class="li-icon amber">⚠</div>
+        <div class="li-content">
+          <div class="li-title">${fmt(t.amount)} — ${t.category} on ${p ? p.name : t.projectId}</div>
+          <div class="li-meta">${t.date} · ${t.user} · ${t.vendor} · ${t.method}</div>
+          ${t.note ? `<div style="font-size:12px; color:var(--grey-700); margin-top:4px; font-style:italic;">"${t.note}"</div>` : ''}
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-primary btn-sm" ${canApprove ? '' : 'disabled'} onclick="${canApprove ? `approveExpense('${t.id}', true)` : `toast('🔒 Only Owner/Co-owner can approve')`}">Approve</button>
+          <button class="btn btn-outline btn-sm" ${canApprove ? '' : 'disabled'} onclick="${canApprove ? `approveExpense('${t.id}', false)` : `toast('🔒 Only Owner/Co-owner can reject')`}">Reject</button>
+        </div>
+      </div>`;
+  }).join('');
+  document.getElementById('approvalsList').innerHTML = rows;
+}
+
+function approveExpense(id, approve) {
+  const t = state.transactions.find(x => x.id === id);
+  if (!t) return;
+  t.status = approve ? 'approved' : 'rejected';
+  state.activity.unshift({ text: `<strong>${ROLE_LABELS[state.user.role]}</strong> ${approve ? 'approved' : 'rejected'} <strong>${fmt(t.amount)}</strong> ${t.category} expense on <strong>${state.projects.find(p => p.id===t.projectId).name}</strong>`, meta: 'Just now' });
+  saveState();
+  renderApprovals();
+  renderDashboard();
+  toast(approve ? '✓ Approved' : '✕ Rejected');
+}
+
+/* ============================================================
+   MONTHLY REPORT
+   ============================================================ */
+function renderReport() {
+  // Project picker
+  const sel = document.getElementById('repProject');
+  if (sel.options.length <= 1) {
+    state.projects.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.name;
+      sel.appendChild(opt);
+    });
+  }
+
+  const selected = sel.value;
+  let projectsForReport = state.projects;
+  let title = 'Consolidated Farm Report';
+  if (selected !== 'all') {
+    projectsForReport = state.projects.filter(p => p.id === selected);
+    title = projectsForReport[0].name;
+  }
+
+  // Compute totals from transactions
+  const txs = selected === 'all' ? state.transactions : state.transactions.filter(t => t.projectId === selected);
+  const income = txs.filter(t => t.type === 'income').reduce((a,t)=>a+t.amount, 0);
+  const expenses = txs.filter(t => t.type === 'expense').reduce((a,t)=>a+t.amount, 0);
+  const net = income - expenses;
+  const budget = projectsForReport.reduce((a,p) => a + p.budget, 0);
+  const budgetUsed = budget > 0 ? Math.round((expenses / budget) * 100) : 0;
+
+  // Expense by category
+  const byCategory = {};
+  txs.filter(t => t.type === 'expense').forEach(t => {
+    byCategory[t.category] = (byCategory[t.category] || 0) + t.amount;
+  });
+
+  // Top 5 expenses
+  const top5 = txs.filter(t => t.type === 'expense').sort((a,b) => b.amount - a.amount).slice(0, 5);
+
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('repGenDate').textContent = today;
+
+  document.getElementById('reportShell').innerHTML = `
+    <div class="report-shell">
+      <div class="rep-cover">
+        <div>
+          <div style="font-size:11px; color: var(--grey-500); text-transform: uppercase; letter-spacing:0.6px;">FarmLedger</div>
+          <h1>${title}</h1>
+          <div style="font-size:13px; color: var(--grey-700); margin-top:4px;">Monthly Financial Report — May 2026</div>
+        </div>
+        <div class="right">
+          <div>Prepared for: <b>Patrick</b></div>
+          <div>Currency: <b>${state.currency === 'USD' ? 'USD' : 'ZiG'}</b></div>
+          <div>Generated: ${today}</div>
+        </div>
+      </div>
+
+      <h2>1 · Executive Summary</h2>
+      <div class="rep-summary">
+        <div class="cell"><div class="lbl">Total Income</div><div class="val">${fmt(income)}</div></div>
+        <div class="cell"><div class="lbl">Total Expenses</div><div class="val">${fmt(expenses)}</div></div>
+        <div class="cell"><div class="lbl">Net P&amp;L</div><div class="val" style="color: ${net >= 0 ? 'var(--green-2)' : 'var(--red)'};">${net >= 0 ? '+' : ''}${fmt(net)}</div></div>
+        <div class="cell"><div class="lbl">Budget Used</div><div class="val" style="color: ${budgetUsed > 100 ? 'var(--red)' : 'var(--grey-900)'};">${budgetUsed}%</div></div>
+      </div>
+      <div class="rep-commentary">
+        ${net >= 0
+          ? `<b>The farm closed the month profitably with net ${fmt(net)}.</b> Income exceeded expenses driven by the Maize Block A harvest (${fmt(3700)} sale) and layer egg sales. Broilers Batch 12 is the principal pressure point — over budget and mortality 4.8%.`
+          : `<b>The farm closed the month at a loss of ${fmt(net)}.</b> Review expense categories — particularly Feed and Veterinary.`}
+      </div>
+
+      <h2>2 · Income</h2>
+      <table class="table">
+        <thead><tr><th>Date</th><th>Project</th><th>Description</th><th class="right">Amount</th></tr></thead>
+        <tbody>
+          ${txs.filter(t => t.type === 'income').sort((a,b) => b.date.localeCompare(a.date)).map(t => `
+            <tr>
+              <td>${t.date}</td>
+              <td>${state.projects.find(p => p.id === t.projectId)?.name || ''}</td>
+              <td>${t.note || t.vendor || ''}</td>
+              <td class="right" style="color: var(--green-2); font-weight:700;">${fmt(t.amount)}</td>
+            </tr>`).join('') || '<tr><td colspan="4" class="empty">No income recorded for this period</td></tr>'}
+          <tr style="background: var(--grey-50); font-weight:700;">
+            <td colspan="3" style="text-align:right;">Total income</td>
+            <td class="right" style="color: var(--green-2);">${fmt(income)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>3 · Expenses by Category</h2>
+      <table class="table">
+        <thead><tr><th>Category</th><th class="right">Amount</th><th class="right">% of total</th></tr></thead>
+        <tbody>
+          ${Object.entries(byCategory).sort((a,b) => b[1] - a[1]).map(([cat, amt]) => `
+            <tr>
+              <td>${cat}</td>
+              <td class="right" style="font-weight:700;">${fmt(amt)}</td>
+              <td class="right">${expenses > 0 ? Math.round((amt/expenses)*100) : 0}%</td>
+            </tr>`).join('') || '<tr><td colspan="3" class="empty">No expenses recorded</td></tr>'}
+          <tr style="background: var(--grey-50); font-weight:700;">
+            <td>Total</td>
+            <td class="right">${fmt(expenses)}</td>
+            <td class="right">100%</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>4 · Top 5 Individual Expenses</h2>
+      <table class="table">
+        <thead><tr><th>Date</th><th>Project</th><th>Vendor</th><th>Category</th><th class="right">Amount</th></tr></thead>
+        <tbody>
+          ${top5.map(t => `
+            <tr>
+              <td>${t.date}</td>
+              <td>${state.projects.find(p => p.id === t.projectId)?.name || ''}</td>
+              <td>${t.vendor || '—'}</td>
+              <td>${t.category}</td>
+              <td class="right" style="font-weight:700;">${fmt(t.amount)}</td>
+            </tr>`).join('') || '<tr><td colspan="5" class="empty">No expenses recorded</td></tr>'}
+        </tbody>
+      </table>
+
+      <h2>5 · Per-Project P&amp;L</h2>
+      <table class="table">
+        <thead><tr><th>Project</th><th class="right">Revenue</th><th class="right">Expenses</th><th class="right">Net</th><th class="right">Budget %</th></tr></thead>
+        <tbody>
+          ${projectsForReport.map(p => {
+            const pTxs = state.transactions.filter(t => t.projectId === p.id);
+            const pIncome = pTxs.filter(t => t.type === 'income').reduce((a,t)=>a+t.amount, 0);
+            const pExp = pTxs.filter(t => t.type === 'expense').reduce((a,t)=>a+t.amount, 0);
+            const pNet = pIncome - pExp;
+            const pUsed = p.budget > 0 ? Math.round((pExp/p.budget)*100) : 0;
+            return `<tr>
+              <td>${p.icon} ${p.name}</td>
+              <td class="right">${fmt(pIncome)}</td>
+              <td class="right">${fmt(pExp)}</td>
+              <td class="right" style="color: ${pNet >= 0 ? 'var(--green-2)' : 'var(--red)'}; font-weight:700;">${pNet >= 0 ? '+' : ''}${fmt(pNet)}</td>
+              <td class="right" style="color: ${pUsed > 100 ? 'var(--red)' : 'var(--grey-900)'}; font-weight:700;">${pUsed}%</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+
+      <h2>6 · Livestock Movement</h2>
+      <table class="table">
+        <thead><tr><th>Group</th><th class="right">Opening</th><th class="right">Births</th><th class="right">Purchases</th><th class="right">Sales</th><th class="right">Deaths</th><th class="right">Closing</th></tr></thead>
+        <tbody>
+          <tr><td>Layer Chickens — Batch 4</td><td class="right">485</td><td class="right">0</td><td class="right">0</td><td class="right">5</td><td class="right">0</td><td class="right" style="font-weight:700;">480</td></tr>
+          <tr><td>Broilers — Batch 12</td><td class="right">950</td><td class="right">0</td><td class="right">0</td><td class="right">0</td><td class="right">53</td><td class="right" style="font-weight:700;">897</td></tr>
+          <tr><td>Goats — Boer Cross Herd</td><td class="right">46</td><td class="right">3</td><td class="right">0</td><td class="right">1</td><td class="right">0</td><td class="right" style="font-weight:700;">48</td></tr>
+        </tbody>
+      </table>
+
+      <h2>7 · Audit Log Highlights</h2>
+      <table class="table">
+        <thead><tr><th>Date</th><th>User</th><th>Action</th></tr></thead>
+        <tbody>
+          ${state.activity.slice(0,5).map(a => `<tr><td>${a.meta}</td><td>—</td><td style="font-size:12px;">${a.text.replace(/<[^>]+>/g,'')}</td></tr>`).join('')}
+        </tbody>
+      </table>
+
+      <div style="margin-top: 30px; padding-top: 14px; border-top: 1px solid var(--grey-100); font-size: 10px; color: var(--grey-500); text-align:center;">
+        Generated by FarmLedger · ${today} · Confidential — for Patrick's farm only
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   NEW PROJECT
+   ============================================================ */
+function openNewProject() {
+  document.getElementById('npStart').valueAsDate = new Date('2026-05-21');
+  openModal('modal-newproject');
+}
+function saveNewProject() {
+  const name = document.getElementById('npName').value;
+  if (!name) { alert('Enter a name'); return; }
+  const cat = document.getElementById('npCategory').value;
+  const icons = { crop: ['🌱','icon-crop'], poultry: ['🐔','icon-poultry'], livestock: ['🐐','icon-livestock'], breeding: ['🐕','icon-breeding'], custom: ['⚙','icon-livestock'] };
+  const [icon, iconClass] = icons[cat];
+  const p = {
+    id: name.toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0, 30),
+    name, category: cat, icon, iconClass,
+    meta: `${cat.charAt(0).toUpperCase()+cat.slice(1)}`,
+    status: 'green',
+    spent: 0, revenue: 0,
+    budget: parseFloat(document.getElementById('npBudget').value) || 0,
+    info: 'Newly created — log first activity'
+  };
+  state.projects.push(p);
+  state.activity.unshift({ text: `<strong>${ROLE_LABELS[state.user.role]}</strong> created project <strong>${p.name}</strong>`, meta: 'Just now' });
+  saveState();
+  closeModal('modal-newproject');
+  renderDashboard();
+  renderProjectsAll();
+  toast('✓ Project created');
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.innerHTML = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ESC closes any open modal
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop.show').forEach(m => m.classList.remove('show'));
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function initApp() {
+  // Set role select to state
+  document.getElementById('roleSelect').value = state.user.role;
+  // Set ccy to state
+  document.querySelectorAll('.ccy-toggle button').forEach(b => b.classList.toggle('active', b.dataset.ccy === state.currency));
+  document.getElementById('ccyLabel').textContent = state.currency === 'USD' ? 'USD' : 'ZiG';
+  applyRole();
+  renderDashboard();
+  renderLivestockEvents();
+  renderBreeding();
+}
+
+initApp();
+
+/* ============================================================
+   PWA — Service worker + Install prompt
+   ============================================================ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => console.log('SW registered', reg.scope))
+      .catch(err => console.warn('SW failed', err));
+  });
+}
+
+// Capture the beforeinstallprompt event (Android / Chrome desktop)
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  document.getElementById('installBtn').style.display = '';
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  if (outcome === 'accepted') {
+    toast('✓ App installed — find it on your home screen');
+  }
+  deferredInstallPrompt = null;
+  document.getElementById('installBtn').style.display = 'none';
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBtn').style.display = 'none';
+  toast('✓ Installed to home screen');
+});
+
+// iOS doesn't fire beforeinstallprompt — show a hint instead the first time
+(function showIosHintOnce(){
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+  const dismissed = localStorage.getItem('iosHintDismissed');
+  if (isIOS && !isStandalone && !dismissed) {
+    document.getElementById('iosHint').style.display = '';
+    document.querySelector('#iosHint button').addEventListener('click', () => {
+      localStorage.setItem('iosHintDismissed', '1');
+    });
+  }
+})();
+
+// Hide the proto banner if running standalone (installed)
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+  document.body.classList.add('installed');
+}
+</script>
+
+</body>
+</html>
