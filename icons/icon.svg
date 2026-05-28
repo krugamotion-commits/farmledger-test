@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1A4D2E"/>
+      <stop offset="1" stop-color="#2E5B3A"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded square background -->
+  <rect width="512" height="512" rx="96" ry="96" fill="url(#g)"/>
+  <!-- Inner subtle highlight -->
+  <rect x="32" y="32" width="448" height="448" rx="80" ry="80" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+  <!-- F monogram -->
+  <g fill="#FFFFFF">
+    <rect x="148" y="120" width="216" height="56" rx="8"/>
+    <rect x="148" y="120" width="56" height="272" rx="8"/>
+    <rect x="148" y="232" width="160" height="48" rx="8"/>
+  </g>
+  <!-- small leaf accent -->
+  <path d="M 360 360 Q 380 320 420 320 Q 420 360 380 380 Q 360 380 360 360 Z" fill="#E0AB2B"/>
+</svg>
